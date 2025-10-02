@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-// const User = require("./userModel");
+const User = require("./userModel");
 
 const CanvasSchema = new mongoose.Schema(
   {
