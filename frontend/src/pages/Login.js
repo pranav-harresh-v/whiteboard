@@ -1,43 +1,40 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
-function Register() {
-  const [name, setName] = useState("");
+function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${API_BASE_URL}/users/register`, {
+      const response = await fetch(`${API_BASE_URL}/users/Login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
       if (response.ok) {
-        localStorage.setItem("userData", JSON.stringify(data)); // setItem() needs two arguments: a key and a value.
-        console.log("Successfully register");
-        navigate("/login");
+        localStorage.setItem("token", data.token);
+        navigate("/profile");
       } else {
-        setError(data.message || "Registration failed");
+        setError(data.message || "Login failed");
       }
     } catch (err) {
-      setError(err.message);
+      setError("An error occurred while logging in");
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 px-4">
       <div className="backdrop-blur-lg bg-white/10 border border-white/20 shadow-2xl rounded-2xl p-10 max-w-md w-full space-y-6 text-white">
-        <h2 className="text-3xl font-bold text-center">Create an Account</h2>
+        <h2 className="text-3xl font-bold text-center">Welcome Back 👋</h2>
         <p className="text-sm text-center text-gray-300">
-          Register to start using your Whiteboard
+          Login to your AI Whiteboard
         </p>
 
         {error && (
@@ -46,16 +43,7 @@ function Register() {
           </div>
         )}
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-gray-300"
-            autoComplete="name"
-          />
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="email"
             placeholder="Email"
@@ -63,7 +51,6 @@ function Register() {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-gray-300"
-            autoComplete="email"
           />
           <input
             type="password"
@@ -72,23 +59,22 @@ function Register() {
             onChange={(e) => setPassword(e.target.value)}
             required
             className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-gray-300"
-            autoComplete="new-password"
           />
           <button
             type="submit"
             className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-medium py-2 rounded-lg transition-all duration-200"
           >
-            Sign up
+            Login
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-300">
-          Already have an account?{" "}
+          Don’t have an account?{" "}
           <Link
-            to="/login"
+            to="/register"
             className="text-cyan-400 hover:underline font-medium"
           >
-            Login
+            Register
           </Link>
         </p>
       </div>
@@ -96,4 +82,4 @@ function Register() {
   );
 }
 
-export default Register;
+export default Login;
