@@ -3,6 +3,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 
 const connectToDatabase = require("./config/db");
+const PORT = process.env.PORT;
 
 const userRoute = require("./routes/userRoute");
 const canvasRoute = require("./routes/canvasRoute");
@@ -17,6 +18,6 @@ app.use(morgan("dev"));
 app.use("/users", userRoute);
 app.use("/canvas", canvasRoute);
 
-app.listen(5000, () => {
-  console.log("Server started");
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
