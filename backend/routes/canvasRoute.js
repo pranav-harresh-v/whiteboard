@@ -5,8 +5,8 @@ const {
   loadCanvas,
   updateCanvas,
   shareCanvas,
-} = require("../controller/canvasController");
-const authenticationMiddleware = require("../middleware/authenticationMiddleware");
+} = require("../controllers/canvasController");
+const authenticationMiddleware = require("../middlewares/authenticationMiddleware");
 
 const router = express.Router();
 

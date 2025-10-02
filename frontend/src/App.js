@@ -1,18 +1,20 @@
-import Board from "./components/Board";
-import Toolbar from "./components/Toolbar";
-import BoardProvider from "./store/BoardProvider";
-import ToolboxProvider from "./store/ToolboxProvider";
-import Toolbox from "./components/Toolbox";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+//import Login from "./pages/Login";
+//import Profile from "./pages/Profile";
+import CanvasPage from "./pages/Canvas";
+import Register from "./pages/Register";
 
 function App() {
   return (
-    <BoardProvider>
-      <ToolboxProvider>
-        <Toolbar />
-        <Board />
-        <Toolbox />
-      </ToolboxProvider>
-    </BoardProvider>
+    <Router>
+      <Routes>
+        {/*<Route path="/login" element={<Login />}></Route>*/}
+        <Route path="/register" element={<Register />}></Route>
+        {/*<Route path="/profile" element={<Profile />}></Route>*/}
+        <Route path="/canvas/:id" element={<CanvasPage />}></Route>
+        {/*<Route path="/" element={<Login />}></Route>*/}
+      </Routes>
+    </Router>
   );
 }
 
