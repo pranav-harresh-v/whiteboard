@@ -20,7 +20,7 @@ function Profile() {
         return;
       }
       try {
-        const profileResponse = await fetch(`${API_BASE_URL}/users/profile`, {
+        const profileResponse = await fetch(`${API_BASE_URL}/api/users/me`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -28,14 +28,14 @@ function Profile() {
         });
         const profileData = await profileResponse.json();
         if (profileResponse.ok) {
-          setProfile(profileData.user);
+          setProfile(profileData.email);
         } else {
           setError(profileData.message || "Failed to fetch profile");
           navigate("/login");
           return;
         }
 
-        const canvasResponse = await fetch(`${API_BASE_URL}/canvas`, {
+        const canvasResponse = await fetch(`${API_BASE_URL}/api/canvas/list`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -54,19 +54,20 @@ function Profile() {
       }
     };
     fetchProfileAndCanvases();
+    console.log("sucess getting profile and canvasses");
   }, [navigate]);
 
   const handleCreateCanvas = async () => {
     const token = localStorage.getItem("token");
     if (!token || !newCanvasName.trim()) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/canvas`, {
+      const response = await fetch(`${API_BASE_URL}/api/canvas/create`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: newCanvasName }),
+        body: JSON.stringify({ title: newCanvasName }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -84,14 +85,17 @@ function Profile() {
     const token = localStorage.getItem("token");
     if (!token || !shareByEmail.trim()) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/canvas/share/${canvasId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify({ shared_with: shareByEmail }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/canvas/share/${canvasId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-type": "application/json",
+          },
+          body: JSON.stringify({ email: shareByEmail }),
+        }
+      );
       const data = await response.json();
       if (response.ok) {
         setSharedwith([...sharedwith, data]);
@@ -111,8 +115,6 @@ function Profile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] p-6 text-white">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Hello, {profile.name}!</h1>
-
         <div className="flex gap-4 mb-10">
           <input
             type="text"
@@ -137,13 +139,8 @@ function Profile() {
                 key={canvas.id}
                 className="p-4 rounded-xl bg-white/10 border border-white/20 shadow"
               >
-                <h3 className="text-xl font-semibold mb-2">{canvas.name}</h3>
-                <p className="text-sm">
-                  Created: {new Date(canvas.createdAt).toLocaleString()}
-                </p>
-                <p className="text-sm mb-2">
-                  Last Updated: {new Date(canvas.updatedAt).toLocaleString()}
-                </p>
+                <h3 className="text-xl font-semibold mb-2">{canvas.title}</h3>
+
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => navigate(`/canvas/${canvas._id}`)}

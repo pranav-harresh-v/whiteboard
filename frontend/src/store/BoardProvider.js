@@ -132,11 +132,17 @@ function boardReducer(state, action) {
         index: state.index + 1,
       };
     }
+    case BOARD_ACTIONS.SET_CANVAS_ELEMENTS:
+      return {
+        ...state,
+        elements: action.payload.elements,
+      };
     default:
       return state;
   }
 }
 
+/*
 const initialBoardState = {
   activeToolItem: TOOL_ITEMS.BRUSH,
   toolActionType: TOOL_ACTION_TYPES.NONE,
@@ -144,8 +150,17 @@ const initialBoardState = {
   history: [[]],
   index: 0,
 };
+*/
 
-const BoardProvider = ({ children }) => {
+const BoardProvider = ({ children, initialCanvas }) => {
+  const initialBoardState = {
+    activeToolItem: TOOL_ITEMS.BRUSH,
+    toolActionType: TOOL_ACTION_TYPES.NONE,
+    elements: initialCanvas?.elements || [],
+    history: [initialCanvas?.elements ?? []],
+    index: 0,
+  };
+
   const [boardState, dispatchBoardAction] = useReducer(
     boardReducer,
     initialBoardState
@@ -226,6 +241,15 @@ const BoardProvider = ({ children }) => {
     });
   };
 
+  const setElements = (elements) => {
+    dispatchBoardAction({
+      type: BOARD_ACTIONS.SET_CANVAS_ELEMENTS,
+      payload: {
+        elements,
+      },
+    });
+  };
+
   const boardUndoHandler = useCallback(() => {
     dispatchBoardAction({
       type: BOARD_ACTIONS.UNDO,
@@ -249,6 +273,7 @@ const BoardProvider = ({ children }) => {
     textAreaBlurHandler,
     undo: boardUndoHandler,
     redo: boardRedoHandler,
+    setElements,
   };
 
   return (

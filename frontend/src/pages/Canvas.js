@@ -25,7 +25,7 @@ function CanvasPage() {
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/canvas/load/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/canvas/load/${id}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -39,7 +39,7 @@ function CanvasPage() {
           return;
         }
         setCanvas(data);
-        console.log("Get Data: ", data);
+        //console.log("Get Data: ", data);
       } catch (error) {
         setError("An error occured while fetching the canvas");
       } finally {

@@ -1,24 +1,72 @@
-import { useContext, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import rough from "roughjs";
 import boardContext from "../../store/board-context";
-import toolboxContext from "../../store/toolbox-context";
 import { TOOL_ACTION_TYPES, TOOL_ITEMS } from "../../constants";
+import toolboxContext from "../../store/toolbox-context";
+import socket from "../../utils/socket";
+import { useParams, useNavigate } from "react-router-dom";
+
 import classes from "./index.module.css";
 
+import { getSvgPathFromStroke } from "../../utils/elements";
+import getStroke from "perfect-freehand";
+
 function Board() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
   const canvasRef = useRef();
   const textAreaRef = useRef();
+  console.log(id);
+
   const {
     elements,
+    toolActionType,
     boardMouseDownHandler,
     boardMouseMoveHandler,
     boardMouseUpHandler,
-    toolActionType,
     textAreaBlurHandler,
     undo,
     redo,
+    setCanvasId,
+    setElements,
+    setHistory,
   } = useContext(boardContext);
   const { toolboxState } = useContext(toolboxContext);
+
+  useEffect(() => {
+    if (id) {
+      // Join the canvas room (no need for userId)
+      socket.emit("joinCanvas", { canvasId: id });
+
+      // Listen for updates from other users
+      socket.on("receiveDrawingUpdate", (updatedElements) => {
+        setElements(updatedElements);
+      });
+
+      // Load initial canvas data
+      socket.on("loadCanvas", (initialElements) => {
+        setElements(initialElements);
+      });
+
+      socket.on("unauthorized", (data) => {
+        console.log(data.message);
+        navigate("/profile");
+      });
+
+      return () => {
+        socket.off("receiveDrawingUpdate");
+        socket.off("loadCanvas");
+        socket.off("unauthorized");
+      };
+    }
+  }, [id]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -27,13 +75,14 @@ function Board() {
   }, []);
 
   useEffect(() => {
-    const handleKeyDown = (event) => {
+    function handleKeyDown(event) {
       if (event.ctrlKey && event.key === "z") {
         undo();
       } else if (event.ctrlKey && event.key === "y") {
         redo();
       }
-    };
+    }
+
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
@@ -45,6 +94,7 @@ function Board() {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
     context.save();
+
     const roughCanvas = rough.canvas(canvas);
 
     elements.forEach((element) => {
@@ -57,7 +107,10 @@ function Board() {
           break;
         case TOOL_ITEMS.BRUSH:
           context.fillStyle = element.stroke;
-          context.fill(element.path);
+          const path = new Path2D(
+            getSvgPathFromStroke(getStroke(element.points))
+          );
+          context.fill(path);
           context.restore();
           break;
         case TOOL_ITEMS.TEXT:
@@ -78,45 +131,50 @@ function Board() {
   }, [elements]);
 
   useEffect(() => {
+    const textarea = textAreaRef.current;
     if (toolActionType === TOOL_ACTION_TYPES.WRITING) {
-      const textArea = textAreaRef.current;
       setTimeout(() => {
-        textArea.focus();
+        textarea.focus();
       }, 0);
     }
   }, [toolActionType]);
 
-  const handleMouseButtonDown = (event) => {
+  // console.log("Elements ",elements);
+
+  const handleMouseDown = (event) => {
     boardMouseDownHandler(event, toolboxState);
   };
 
   const handleMouseMove = (event) => {
     boardMouseMoveHandler(event);
+    socket.emit("drawingUpdate", { canvasId: id, elements });
   };
 
   const handleMouseUp = () => {
     boardMouseUpHandler();
+    socket.emit("drawingUpdate", { canvasId: id, elements });
   };
 
   return (
     <>
       {toolActionType === TOOL_ACTION_TYPES.WRITING && (
         <textarea
+          type="text"
           ref={textAreaRef}
           className={classes.textElementBox}
           style={{
             top: elements[elements.length - 1].y1,
             left: elements[elements.length - 1].x1,
-            fontSize: `${elements[elements.length - 1].size}px`,
-            color: elements[elements.length - 1].stroke,
+            fontSize: `${elements[elements.length - 1]?.size}px`,
+            color: elements[elements.length - 1]?.stroke,
           }}
           onBlur={(event) => textAreaBlurHandler(event.target.value)}
         />
       )}
       <canvas
-        id="canvas"
         ref={canvasRef}
-        onMouseDown={handleMouseButtonDown}
+        id="canvas"
+        onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       />

@@ -13,6 +13,7 @@ const boardContext = createContext({
   textAreaBlurHandler: () => {},
   undo: () => {},
   redo: () => {},
+  setElements: () => {},
 });
 
 export default boardContext;
