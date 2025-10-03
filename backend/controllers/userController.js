@@ -1,80 +1,64 @@
+const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
-const userModel = require("../models/userModel");
-require("dotenv").config();
 
-const jwtSecret = process.env.JWT_SECRET;
+const SECRET_KEY = process.env.JWT_SECRET;
 
-const registerUser = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-    const newUser = await userModel.register(name, email, password);
-    res.status(201).json(newUser);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const loginUser = async (req, res) => {
+// Register User
+exports.registerUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+      return res.status(400).json({ error: "All fields are required" });
     }
 
-    const user = await userModel.login(email, password);
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
 
-    const token = jwt.sign({ email: user.email }, jwtSecret);
+    const newUser = new User({ email, password });
+    await newUser.save();
 
-    return res.status(200).json({
-      message: "Login successful",
-      token,
-    });
+    res.status(201).json({ message: "User registered successfully!" });
   } catch (error) {
-    res.status(400).json({ message: "Error logging in: " + error.message });
+    res
+      .status(500)
+      .json({ error: "Registration failed", details: error.message });
   }
 };
 
-const getUserProfile = async (req, res) => {
+// Login User
+exports.loginUser = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(401)
-        .json({ message: "Authorization token is required" });
-    }
+    const { email, password } = req.body;
 
-    const token = authHeader.split(" ")[1];
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
-    const decoded = jwt.verify(token, jwtSecret);
-    if (!decoded || !decoded.email) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
-    const user = await userModel.getUser(decoded.email);
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-
-    return res.status(200).json({
-      message: "User profile retrieved successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
+    const token = jwt.sign({ userId: user._id }, SECRET_KEY, {
+      expiresIn: "7d",
     });
+
+    res.json({ message: "Login successful", token });
   } catch (error) {
-    return res.status(401).json({ message: error.message });
+    res.status(500).json({ error: "Login failed", details: error.message });
   }
 };
 
-module.exports = {
-  registerUser,
-  loginUser,
-  getUserProfile,
+// Get User Details
+exports.getUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json(user);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to get user", details: error.message });
+  }
 };
